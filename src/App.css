@@ -97,6 +97,7 @@ body, .app {
   background-repeat: no-repeat;
   background-size: 28px;
   font-size: 0;
+  cursor: pointer;
 }
 
 .search-books-results {
