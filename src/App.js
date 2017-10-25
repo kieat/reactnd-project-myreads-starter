@@ -1,22 +1,15 @@
 import React from 'react'
 import { Router, Route } from 'react-router-dom'
-// import * as BooksAPI from './BooksAPI'
 import './App.css'
 import BookList from './BookList'
 import SearchBooks from './SearchBooks'
-import createBrowserHistory from 'history/createBrowserHistory'
 import * as BooksAPI from './BooksAPI'
+import createBrowserHistory from 'history/createBrowserHistory'
 
 const customHistory = createBrowserHistory()
 
 class BooksApp extends React.Component {
   state = {
-    /**
-     * TODO: Instead of using this state variable to keep track of which page
-     * we're on, use the URL in the browser's address bar. This will ensure that
-     * users can use the browser's back and forward buttons to navigate between
-     * pages, as well as provide a good URL they can bookmark and share.
-     */
     books:[]
   }
 
@@ -28,30 +21,33 @@ class BooksApp extends React.Component {
   }
 
   updateBook = (selectedBook, newshelf) => {
-    this.setState((state) => {
-      if (this.checkExistance(selectedBook) === false){
-        selectedBook.shelf = newshelf
-        state.books.push(selectedBook)
-        return {
-          books: state.books.sort()
-        }
-      }else{
+    BooksAPI.update(selectedBook, newshelf).then((res) => {
+      selectedBook.shelf = newshelf
 
-        return {
-          books: state.books.map((book) => {
-            if ( book.id === selectedBook.id ){
-              book.shelf = newshelf
-            }
-            return book
-          }).sort()
+      this.setState((state) => {
+        if (this.checkExistance(selectedBook) === false){
+          selectedBook.shelf = newshelf
+          state.books.push(selectedBook)
+          return {
+            books: state.books.sort()
+          }
+        }else{
+
+          return {
+            books: state.books.map((book) => {
+              if ( book.id === selectedBook.id ){
+                book.shelf = newshelf
+              }
+              return book
+            }).sort()
+          }
         }
-      }
+      })
     })
   }
 
   addBook = (selectedBook, newshelf) => {
     BooksAPI.update(selectedBook, newshelf).then((res) => {
-      console.log(res)
       selectedBook.shelf = newshelf
       this.setState((state) => ({
           books: state.books.concat([ selectedBook ])
@@ -106,10 +102,11 @@ class BooksApp extends React.Component {
                   onSelectChanged={this.updateBook}
               />
           )}/>
-          <Route path="/search" render={({ history }) => (
-            <SearchBooks history={ history }
+          <Route path="/search" render={() => (
+            <SearchBooks
                 onSelectChanged={this.addBook}
                 convertBook4Show={this.convertBook4Show}
+                booksInShelves={this.state.books}
             />
           )}/>
         </div>

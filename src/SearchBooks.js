@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import * as BooksAPI from './BooksAPI'
 import SearchBooksBar from './SearchBooksBar'
 import SearchBooksResult from './SearchBooksResult'
+import { debounce } from 'lodash'
 
 class SearchBooks extends Component {
   state = {
@@ -11,40 +12,53 @@ class SearchBooks extends Component {
   }
 
   showResults = (query, books, errorMessage) => {
+    console.log(books)
     this.setState((state) => ({
       query: query,
-      books: books,
+      books: books.map(book => {
+        const matchedBooks = this.props.booksInShelves.filter(bookInShelf => (bookInShelf.id === book.id))
+        console.log(matchedBooks.length)
+        if ( matchedBooks.length > 0 ){
+          return matchedBooks[0]
+        }else{
+          return book
+        }
+      }),
       errorMessage: errorMessage
     }))
   }
 
-  handleEnter = (event) => {
+  searchBooks = (query) => {
+    console.log("searching")
+    BooksAPI.search(query).then((books) => {
+        console.log(books)
 
-      if (event.charCode === 13){
-        console.log(event.target.value)
-        event.persist()
-        BooksAPI.search(event.target.value).then((books) => {
-            console.log(books)
-
-            if (typeof(books) === 'undefined'){
-              this.showResults(event.target.value, [], 'failed to connect')
-            }else if (typeof(books.items) !== 'undefined' && books.items.length === 0){
-              this.showResults(event.target.value, [], books.error)
-            }else{
-              this.showResults(
-                  event.target.value,
-                  books.map(book => (this.props.convertBook4Show(book))),
-                  ''
-              )
-            }
-          })
-}
+        if (typeof(books) === 'undefined'){
+          this.showResults(query, [], 'failed to connect')
+        }else if (typeof(books.items) !== 'undefined' && books.items.length === 0){
+          this.showResults(query, [], books.error)
+        }else{
+          this.showResults(
+              query,
+              books.map(book => (this.props.convertBook4Show(book))),
+              ''
+          )
+        }
+    })
   }
+
+  handleChange = (event) => {
+    event.persist()
+    console.log(event.target.value)
+    this.doSearchWith(event.target.value)
+  }
+
+  doSearchWith = debounce(this.searchBooks, 500)
 
   render(){
     return (
       <div className="search-books">
-        <SearchBooksBar history={ this.props.history } onEnter={this.handleEnter} query={this.state.query}/>
+        <SearchBooksBar handleChange={this.handleChange} query={this.state.query}/>
         <SearchBooksResult
             books={this.state.books}
             errorMessage={this.state.errorMessage}
